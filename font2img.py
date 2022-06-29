@@ -120,6 +120,7 @@ class font2img():
             font_name = os.path.basename(os.path.splitext(font_path)[0])
             failure_chars = list()
             same_fonts_n = 0
+            is_os_error = False
             if not self.is_by_char:
                 dst_img_dir_path = os.path.join(self.dst_dir_path, font_name)
                 if not os.path.exists(dst_img_dir_path):
@@ -134,7 +135,12 @@ class font2img():
                 if not self.is_char_pbar:
                     pbar_chars.clear()
                 pbar_chars.set_description('{}'.format(' ' * 30))
-                img = self._draw_char_func(c, font_path, self.canvas_size, self.font_size)
+                try:
+                    img = self._draw_char_func(c, font_path, self.canvas_size, self.font_size)
+                except OSError:
+                    is_os_error = True
+                if is_os_error:
+                    continue
                 # 画像が真っ白，つまり画像化失敗した文字はfailure_charsに
                 if self._is_white(img):
                     failure_chars.append(c)
@@ -159,6 +165,8 @@ class font2img():
                 for dst_img_path in dst_img_paths:
                     os.remove(dst_img_path)
                 self.failure_txt.write('{},same\n'.format(font_name))
+            if is_os_error:
+                self.failure_txt.write('{},os error\n'.format(font_name))
         # 最終的に，空だったディレクトリを削除
         for path in glob(self.dst_dir_path + '/*'):
             if os.path.isdir(path) and not os.listdir(path):
